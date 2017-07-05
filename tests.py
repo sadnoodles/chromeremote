@@ -32,7 +32,7 @@ class TestConnection(unittest.TestCase):
 
 class TestTab(unittest.TestCase):
     def setUp(self):
-        # 保证127.0.0.1:9222启动了Chrome dev tools
+        # Ensure Chrome dev tools is open on 127.0.0.1:9222
         self.tab = ChromeTab('127.0.0.1', 9222)
         self.tab.open_tab()
 

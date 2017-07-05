@@ -34,7 +34,7 @@ from chromeremote import ChromeTab
 
 
 def print_ret(kwargs):
-    # 在此处处理chrome的Event主动调用
+    # This func will be called when received a registed chrome event.
     assert kwargs.has_key('current_tab')
     print kwargs
     return
@@ -43,16 +43,16 @@ def print_ret(kwargs):
 class ExampleTab(ChromeTab):
 
     def test_recv(self, result):
-        # 在此处处理Method调用的返回结果
+        # Handle received result here.
         print "Received result:", result
 
     def run(self):
         self.register_event("Network.responseReceived",
-                            print_ret)  # 提前注册chrome会主动调用的函数。
+                            print_ret)  # Register a event before thread started.
         self.open_tab()
         self.Network.enable(maxTotalBufferSize=10000000,
                             maxResourceBufferSize=5000000)
-        self.Page.enable(callback=self.test_recv)  # 每一个请求都可以有一个回调函数。
+        self.Page.enable(callback=self.test_recv)  # You can add callback for every request.
         self.Page.navigate(url='http://www.baidu.com/')
         self.Page.getResourceTree()
         super(ExampleTab, self).run()
