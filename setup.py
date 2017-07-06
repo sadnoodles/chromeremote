@@ -4,7 +4,10 @@
 from distutils.core import setup
 
 long_description = """
-Chrome Remote is a tool for remote debug with Chrome. It can be used for web spider, automatic testing, XSS detection etc.
+Chrome Remote is a tool for remote debug with Chrome. 
+It can be used for web spider, automatic testing, XSS detection etc.
+
+See more from github https://github.com/sadnoodles/chromeremote.
 """
 
 setup(
