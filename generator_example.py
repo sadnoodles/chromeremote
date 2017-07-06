@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from chromeremote import ChromeTab, TabTimeout
+import time
 
 
 class CallbackFuncs(object):
@@ -39,11 +40,13 @@ def main():
 
     # Request a URL
     tab.Page.navigate(url='http://www.baidu.com/')
-
     # You can add callback for every request.
     tab.Page.getResourceTree(callback=callbacks.go_to_not_found)
     try:
         for msg in tab.messages(timeout_return_none=True):
+            if time.time() - tab.start_time > 5:
+                # Custom timeout
+                break
             if msg is None:
                 # If you want to save the waitting time to do something else, set timeout_return_none to True
                 # Otherwise ignore this param.
@@ -57,7 +60,6 @@ def main():
     except TabTimeout:
         # Global tab timeout.
         pass
-    time.sleep(10)
     tab.kill()
     time.sleep(2)
 
