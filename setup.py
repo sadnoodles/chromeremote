@@ -12,13 +12,13 @@ See more from github https://github.com/sadnoodles/chromeremote.
 
 setup(
     name="chromeremote",
-    version="0.2.2",
+    version="0.2.3",
     description="Chrome Remote Dev Tools",
     long_description=long_description,
     author="sadnoodles",
     author_email="sadnoodles@gmail.com",
     url="https://github.com/sadnoodles/chromeremote",
-    download_url="https://github.com/sadnoodles/chromeremote/archive/v0.2.0.tar.gz",
+    download_url="https://github.com/sadnoodles/chromeremote/releases",
     license="GPL",
     py_modules=["chromeremote"],
     install_requires=[
