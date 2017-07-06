@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 import time
-from chromeremote import ChromeDevToolsConnection, ChromeTab
+from chromeremote import ChromeDevToolsConnection, ChromeTabThread
 
 
 def print_ret(kwargs):
@@ -33,7 +33,7 @@ class TestConnection(unittest.TestCase):
 class TestTab(unittest.TestCase):
     def setUp(self):
         # Ensure Chrome dev tools is open on 127.0.0.1:9222
-        self.tab = ChromeTab('127.0.0.1', 9222)
+        self.tab = ChromeTabThread('127.0.0.1', 9222)
         self.tab.open_tab()
 
     def test_register_event(self):
@@ -83,7 +83,7 @@ class TestTab(unittest.TestCase):
         )
 
     def test_close_thread(self):
-        tab = ChromeTab('127.0.0.1', 9222)
+        tab = ChromeTabThread('127.0.0.1', 9222)
         tab.open_tab()
         tab.start()
         time.sleep(1)
@@ -94,7 +94,7 @@ class TestTab(unittest.TestCase):
         self.assertEqual(tab.isAlive(), False)
 
     def test_async_return(self):
-        tab = ChromeTab('127.0.0.1', 9222)
+        tab = ChromeTabThread('127.0.0.1', 9222)
         tab.open_tab()
         tab.start()
         import time

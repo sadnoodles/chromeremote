@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from chromeremote import ChromeTab
+from chromeremote import ChromeTabThread
 
 
 def print_ret(kwargs):
@@ -10,7 +10,7 @@ def print_ret(kwargs):
     return
 
 
-class ExampleTab(ChromeTab):
+class ExampleTab(ChromeTabThread):
 
     def test_recv(self, result):
         # Handle received result here.

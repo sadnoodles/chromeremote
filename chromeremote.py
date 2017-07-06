@@ -20,6 +20,10 @@ class WSMethod(object):
         return partial(self.parent.ws_send, func_name)
 
 
+class TabTimeout(Exception):
+    pass
+
+
 class Result(object):
     def __init__(self, message_id, func_name, callback=None):
         self.message_id = message_id
@@ -81,12 +85,12 @@ class ChromeDevToolsConnection(object):
         return partial(self.send_commad, func_name)
 
 
-class ChromeTab(threading.Thread):
+class ChromeTab(object):
 
     WS_TIMEOUT = 0.2
     TAB_TIMEOUT = 60 * 60 * 2  # Close this tab after 2 hours.
 
-    def __init__(self, host=None, port=None, connection=None):
+    def __init__(self, host=None, port=None, connection=None, ws_timeout=0.2):
         if isinstance(connection, ChromeDevToolsConnection):
             # Using existing ChromeDevToolsConnection instance
             self.conn = connection
@@ -100,11 +104,11 @@ class ChromeTab(threading.Thread):
         self.msg_lok = threading.Lock()
         self.tab_id = None
         self.ws = None
+        self.ws_timeout = ws_timeout or self.WS_TIMEOUT
         self.start_time = 0
         self._running = True
         self._message_callbacks = {}
         self._events_callbacks = {}
-        super(ChromeTab, self).__init__()
 
     def get_message_id(self):
         self.msg_lok.acquire()
@@ -121,7 +125,7 @@ class ChromeTab(threading.Thread):
 
     def open_tab(self, tab_info=None):
         '''
-        Open a new tab if tab_info not provided. 
+        Open a new tab if tab_info not provided.
         "tab_info" if a dict get from http://{host}:{port}/json
         '''
         if tab_info:
@@ -145,7 +149,7 @@ class ChromeTab(threading.Thread):
         if self.ws:
             self.close_ws()
         self.ws = websocket.create_connection(ws_url)
-        self.ws.settimeout(self.WS_TIMEOUT)
+        self.ws.settimeout(self.ws_timeout)
 
     def ws_send(self, func_name, **kwargs):
         callback = kwargs.pop('callback', None)
@@ -239,11 +243,19 @@ class ChromeTab(threading.Thread):
                 func))
             traceback.print_exc()
 
+    def handle_messages(self, parsed_message):
+        if parsed_message.has_key('id') and parsed_message.has_key('result'):
+            self.handle_message_callback(
+                parsed_message['id'], parsed_message['result'])
+        elif parsed_message.has_key('method') and parsed_message.has_key('params'):
+            self.handle_event_callback(
+                parsed_message['method'], parsed_message['params'])
+
     def check_ws_ready(self):
         if not self.ws:
             raise ValueError("Tab is not initialized.")
 
-    def _start_waiting_message(self):
+    def messages(self, auto_handle_message=True, timeout_return_none=False):
         self.start_time = time.time()
         self.check_ws_ready()
         while self._running:
@@ -251,34 +263,48 @@ class ChromeTab(threading.Thread):
             # check tab max timeout
             now = time.time()
             if now - self.start_time > self.TAB_TIMEOUT:
-                break
+                raise TabTimeout()
 
             try:
                 message = self.ws.recv()
                 parsed_message = json.loads(message)
-                if parsed_message.has_key('id') and parsed_message.has_key('result'):
-                    self.handle_message_callback(
-                        parsed_message['id'], parsed_message['result'])
-                elif parsed_message.has_key('method') and parsed_message.has_key('params'):
-                    self.handle_event_callback(
-                        parsed_message['method'], parsed_message['params'])
-
+                if auto_handle_message:
+                    self.handle_messages(parsed_message)
+                yield parsed_message
             except websocket.WebSocketTimeoutException:
+                if timeout_return_none:
+                    yield None
                 continue
             except websocket.WebSocketConnectionClosedException:
                 break
             except KeyboardInterrupt:
                 break
-        self.close_tab()
 
     def run(self):
         if not self.tab_id and not self.ws:
             self.open_tab()
-        self._start_waiting_message()
+        for i in self.messages(auto_handle_message=False):
+            self.handle_messages(i)
+        self.close_tab()
+
+
+class ChromeTabThread(ChromeTab, threading.Thread):
+
+    def __init__(self, host=None, port=None, connection=None, ws_timeout=0.2):
+        super(ChromeTabThread, self).__init__(
+            host, port, connection, ws_timeout)
+        super(ChromeTab, self).__init__()
+
+    def run(self):
+        if not self.tab_id and not self.ws:
+            self.open_tab()
+        for i in self.messages():
+            pass
+        self.close_tab()
 
 
 def main():
-    w1 = ChromeTab('127.0.0.1', 9222)
+    w1 = ChromeTabThread('127.0.0.1', 9222)
     w1.start()
     time.sleep(2)
     w1.kill()
