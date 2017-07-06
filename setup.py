@@ -12,7 +12,7 @@ See more from github https://github.com/sadnoodles/chromeremote.
 
 setup(
     name="chromeremote",
-    version="0.2.1",
+    version="0.2.2",
     description="Chrome Remote Dev Tools",
     long_description=long_description,
     author="sadnoodles",

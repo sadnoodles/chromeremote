@@ -104,6 +104,7 @@ class ChromeTab(object):
         self.msg_lok = threading.Lock()
         self.tab_id = None
         self.ws = None
+        self.tab_info = None
         self.ws_timeout = ws_timeout or self.WS_TIMEOUT
         self.start_time = 0
         self._running = True
@@ -123,7 +124,7 @@ class ChromeTab(object):
         self._message_callbacks[message_id] = res
         return res
 
-    def open_tab(self, tab_info=None):
+    def open_tab(self, tab_info=None, connect_ws=True):
         '''
         Open a new tab if tab_info not provided.
         "tab_info" if a dict get from http://{host}:{port}/json
@@ -141,13 +142,22 @@ class ChromeTab(object):
         else:
             resp = self.conn.new()
             tab_info = resp.json()
+        self.tab_info = tab_info
         self.tab_id = tab_info['id']
-        self.connect_ws(tab_info['webSocketDebuggerUrl'])
-        return self
+        if connect_ws:
+            self.connect_ws(self.ws_url)
+        return tab_info
 
-    def connect_ws(self, ws_url):
+    @property
+    def ws_url(self):
+        return self.tab_info and self.tab_info['webSocketDebuggerUrl']
+
+    def connect_ws(self, ws_url=None):
         if self.ws:
             self.close_ws()
+        ws_url = ws_url or self.ws_url
+        if not ws_url:
+            raise ValueError("'ws_url' must be given.")
         self.ws = websocket.create_connection(ws_url)
         self.ws.settimeout(self.ws_timeout)
 
