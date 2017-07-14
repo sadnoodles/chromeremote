@@ -319,7 +319,7 @@ def main():
     time.sleep(2)
     w1.kill()
     time.sleep(1)
-    print w1.isAlive()
+    print(w1.isAlive())
 
 
 if __name__ == '__main__':
