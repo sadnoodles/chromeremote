@@ -25,20 +25,28 @@ class TabTimeout(Exception):
 
 
 class Result(object):
-    def __init__(self, message_id, func_name, callback=None):
+    def __init__(self, message_id, func_name, callback=None, on_error=None):
         self.message_id = message_id
         self.func_name = func_name
         self.ready = False
         self.result = None
         self.callback = callback
+        self.on_error = on_error
 
     def set_result(self, result):
         self.result = result
         self.ready = True
 
     def __str__(self):
-        return "<Result object <message id>: %s, <method>: %s, <ready>: %s, <result>: %s>" % (
-            self.message_id, self.func_name, self.ready, self.result)
+        return ("<Result object <message id>: %s, "
+                "<method>: %s, "
+                "<ready>: %s, "
+                "<result>: %s> "
+                "<callback>: %s> "
+                "<on_error>: %s> ") % (
+            self.message_id, self.func_name,
+            self.ready, self.result,
+            self.callback, self.on_error)
 
 
 class ChromeDevToolsConnection(object):
@@ -118,9 +126,9 @@ class ChromeTab(object):
         self.msg_lok.release()
         return msg_id
 
-    def _add_message_callback(self, message_id, func_name, callback):
+    def _add_message_callback(self, message_id, func_name, callback, on_error=None):
         res = Result(
-            message_id, func_name, callback)
+            message_id, func_name, callback, on_error=on_error)
         self._message_callbacks[message_id] = res
         return res
 
@@ -163,12 +171,13 @@ class ChromeTab(object):
 
     def ws_send(self, func_name, **kwargs):
         callback = kwargs.pop('callback', None)
+        on_error = kwargs.pop('on_error', None)
         message_id = self.get_message_id()
         call_obj = {"id": message_id,
                     "method": func_name, "params": kwargs}
         self.ws.send(json.dumps(call_obj))
         result = self._add_message_callback(
-            message_id, func_name, callback)
+            message_id, func_name, callback, on_error=on_error)
         return result
 
     def register_event(self, event_name, function):
@@ -214,7 +223,14 @@ class ChromeTab(object):
         self.__setattr__(attr, genericelement)
         return genericelement
 
-    def handle_message_callback(self, message_id, result):
+    def default_on_error(self, id, func_name, error):
+        print("Message id: {} received an error. "
+              "function name: {}, error message: {}. "
+              "Provide an 'on_error' function to handle this error yourself.".format(
+                  id, func_name, error
+              ))
+
+    def handle_message_callback(self, message_id, result=None, error=None):
         # print "length of message_callbacks", len(self._message_callbacks)
         if not self._message_callbacks.has_key(message_id):
             raise ValueError
@@ -222,19 +238,31 @@ class ChromeTab(object):
 
         try:
             callback_result.set_result(result.copy())
-            result['current_tab'] = self
-            if not callback_result.callback:
-                return
-            callback_result.callback(result)
+            if result:
+                result['current_tab'] = self
+                if not callback_result.callback:
+                    return
+                callback_result.callback(result)
+            if error:
+                error['current_tab'] = self
+                if not callback_result.on_error:
+                    self.default_on_error(
+                        message_id,
+                        callback_result.func_name, error)
+                    return
+                callback_result.on_error(error)
+
         except Exception as e:
             msg = ("Got an exception in message callback, "
                    "<message id>:{} ,"
                    "<request function>:{} ,"
-                   "<callback function>:{} ")
+                   "<callback function>:{} "
+                   "<on_error function>:{} ")
             print(msg.format(
                 message_id,
                 callback_result.func_name,
-                callback_result.callback))
+                callback_result.callback,
+                callback_result.on_error))
             traceback.print_exc()
 
     def handle_event_callback(self, event_name, params):
@@ -254,9 +282,11 @@ class ChromeTab(object):
             traceback.print_exc()
 
     def handle_messages(self, parsed_message):
-        if parsed_message.has_key('id') and parsed_message.has_key('result'):
+        if 'id' in parsed_message and ('result' in parsed_message or 'error' in parsed_message):
             self.handle_message_callback(
-                parsed_message['id'], parsed_message['result'])
+                parsed_message['id'],
+                result=parsed_message.get('result', {}),
+                error=parsed_message.get('error', {}))
         elif parsed_message.has_key('method') and parsed_message.has_key('params'):
             self.handle_event_callback(
                 parsed_message['method'], parsed_message['params'])
