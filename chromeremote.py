@@ -238,12 +238,12 @@ class ChromeTab(object):
 
         try:
             callback_result.set_result(result.copy())
-            if result:
+            if result is not None:
                 result['current_tab'] = self
                 if not callback_result.callback:
                     return
                 callback_result.callback(result)
-            if error:
+            if error is not None:
                 error['current_tab'] = self
                 if not callback_result.on_error:
                     self.default_on_error(
@@ -285,8 +285,8 @@ class ChromeTab(object):
         if 'id' in parsed_message and ('result' in parsed_message or 'error' in parsed_message):
             self.handle_message_callback(
                 parsed_message['id'],
-                result=parsed_message.get('result', {}),
-                error=parsed_message.get('error', {}))
+                result=parsed_message.get('result', None),
+                error=parsed_message.get('error', None))
         elif parsed_message.has_key('method') and parsed_message.has_key('params'):
             self.handle_event_callback(
                 parsed_message['method'], parsed_message['params'])
