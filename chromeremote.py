@@ -237,7 +237,7 @@ class ChromeTab(object):
         callback_result = self._message_callbacks.pop(message_id)
 
         try:
-            callback_result.set_result(result.copy())
+            callback_result.set_result(result and result.copy())
             if result is not None:
                 result['current_tab'] = self
                 if not callback_result.callback:
