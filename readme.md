@@ -72,6 +72,7 @@ if __name__ == '__main__':
 
 ```
 
-A XSS detection Example is added. See [xssbot.py](./xssbot.py) Thanks for [howmp](https://github.com/howmp).
+A XSS detection Example is added. See [xssbot.py](./examples/xssbot.py) Thanks for [howmp](https://github.com/howmp).
 
-Generator mode example See [generator_example.py](./generator_example.py)
+Generator example: [generator_example.py](./examples/generator_example.py)
+Screenshot example: [screenshot.py](./examples/screenshot.py)
