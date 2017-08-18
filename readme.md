@@ -1,4 +1,5 @@
 # Chrome Remote
+[![PyPI version](https://badge.fury.io/py/chromeremote.svg)](https://badge.fury.io/py/chromeremote)
 
 A tool for Chrome remote dev debugging. Support:
 
