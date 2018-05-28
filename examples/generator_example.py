@@ -11,7 +11,7 @@ class CallbackFuncs(object):
 
     def print_ret(self, kwargs):
         # This func will be called when received a registed chrome event.
-        print kwargs
+        print(kwargs)
 
     def go_to_not_found(self, kwargs):
         # Handle received result here.

@@ -5,8 +5,8 @@ from chromeremote import ChromeTabThread
 
 def print_ret(kwargs):
     # This func will be called when received a registed chrome event.
-    assert kwargs.has_key('current_tab')
-    print kwargs
+    assert 'current_tab' in kwargs
+    print(kwargs)
     return
 
 
@@ -14,7 +14,7 @@ class ExampleTab(ChromeTabThread):
 
     def test_recv(self, result):
         # Handle received result here.
-        print "Received result:", result
+        print("Received result:", result)
 
     def run(self):
         self.register_event("Network.responseReceived",
