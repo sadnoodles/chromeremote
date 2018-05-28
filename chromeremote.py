@@ -43,10 +43,9 @@ class Result(object):
                 "<ready>: %s, "
                 "<result>: %s> "
                 "<callback>: %s> "
-                "<on_error>: %s> ") % (
-            self.message_id, self.func_name,
-            self.ready, self.result,
-            self.callback, self.on_error)
+                "<on_error>: %s> ") % (self.message_id, self.func_name,
+                                       self.ready, self.result, self.callback,
+                                       self.on_error)
 
 
 class ChromeDevToolsConnection(object):
@@ -74,9 +73,8 @@ class ChromeDevToolsConnection(object):
             resp = requests.post(url, data)
 
         if resp.status_code >= 400:
-            raise requests.HTTPError(
-                "<code>: {}, <mesage>:{}.".format(resp.status_code,
-                                                  resp.text))
+            raise requests.HTTPError("<code>: {}, <mesage>:{}.".format(
+                resp.status_code, resp.text))
 
         return resp
 
@@ -126,9 +124,12 @@ class ChromeTab(object):
         self.msg_lok.release()
         return msg_id
 
-    def _add_message_callback(self, message_id, func_name, callback, on_error=None):
-        res = Result(
-            message_id, func_name, callback, on_error=on_error)
+    def _add_message_callback(self,
+                              message_id,
+                              func_name,
+                              callback,
+                              on_error=None):
+        res = Result(message_id, func_name, callback, on_error=on_error)
         self._message_callbacks[message_id] = res
         return res
 
@@ -138,15 +139,14 @@ class ChromeTab(object):
         "tab_info" if a dict get from http://{host}:{port}/json
         '''
         if tab_info:
-            if not (isinstance(tab_info, dict) and
-                    tab_info.has_key('id')
-                    ):
+            if not (isinstance(tab_info, dict) and 'id' in tab_info):
                 raise ValueError(
                     "'tab_info' must be a dict and contains key 'id'.")
             else:
-                if not tab_info.has_key('webSocketDebuggerUrl'):
+                if 'webSocketDebuggerUrl' not in tab_info:
                     raise ValueError(
-                        "'tab_info' has no 'webSocketDebuggerUrl', maybe Its in use.")
+                        "'tab_info' has no 'webSocketDebuggerUrl', maybe Its in use."
+                    )
         else:
             resp = self.conn.new()
             tab_info = resp.json()
@@ -173,8 +173,7 @@ class ChromeTab(object):
         callback = kwargs.pop('callback', None)
         on_error = kwargs.pop('on_error', None)
         message_id = self.get_message_id()
-        call_obj = {"id": message_id,
-                    "method": func_name, "params": kwargs}
+        call_obj = {"id": message_id, "method": func_name, "params": kwargs}
         self.ws.send(json.dumps(call_obj))
         result = self._add_message_callback(
             message_id, func_name, callback, on_error=on_error)
@@ -226,13 +225,12 @@ class ChromeTab(object):
     def default_on_error(self, id, func_name, error):
         print("Message id: {} received an error. "
               "function name: {}, error message: {}. "
-              "Provide an 'on_error' function to handle this error yourself.".format(
-                  id, func_name, error
-              ))
+              "Provide an 'on_error' function to handle this error yourself.".
+              format(id, func_name, error))
 
     def handle_message_callback(self, message_id, result=None, error=None):
         # print "length of message_callbacks", len(self._message_callbacks)
-        if not self._message_callbacks.has_key(message_id):
+        if message_id not in self._message_callbacks:
             raise ValueError
         callback_result = self._message_callbacks.pop(message_id)
 
@@ -246,9 +244,8 @@ class ChromeTab(object):
             if error is not None:
                 error['current_tab'] = self
                 if not callback_result.on_error:
-                    self.default_on_error(
-                        message_id,
-                        callback_result.func_name, error)
+                    self.default_on_error(message_id,
+                                          callback_result.func_name, error)
                     return
                 callback_result.on_error(error)
 
@@ -258,15 +255,13 @@ class ChromeTab(object):
                    "<request function>:{} ,"
                    "<callback function>:{} "
                    "<on_error function>:{} ")
-            print(msg.format(
-                message_id,
-                callback_result.func_name,
-                callback_result.callback,
-                callback_result.on_error))
+            print(msg.format(message_id, callback_result.func_name,
+                             callback_result.callback,
+                             callback_result.on_error))
             traceback.print_exc()
 
     def handle_event_callback(self, event_name, params):
-        if not self._events_callbacks.has_key(event_name):
+        if event_name not in self._events_callbacks:
             return
         func = self._events_callbacks[event_name]
         try:
@@ -276,20 +271,19 @@ class ChromeTab(object):
             msg = ("Got an exception in event callback, "
                    "<event name>:{} ,"
                    "<callback function>:{} ")
-            print(msg.format(
-                event_name,
-                func))
+            print(msg.format(event_name, func))
             traceback.print_exc()
 
     def handle_messages(self, parsed_message):
-        if 'id' in parsed_message and ('result' in parsed_message or 'error' in parsed_message):
+        if 'id' in parsed_message and ('result' in parsed_message
+                                       or 'error' in parsed_message):
             self.handle_message_callback(
                 parsed_message['id'],
                 result=parsed_message.get('result', None),
                 error=parsed_message.get('error', None))
-        elif parsed_message.has_key('method') and parsed_message.has_key('params'):
-            self.handle_event_callback(
-                parsed_message['method'], parsed_message['params'])
+        elif 'method' in parsed_message and 'params' in parsed_message:
+            self.handle_event_callback(parsed_message['method'],
+                                       parsed_message['params'])
 
     def check_ws_ready(self):
         if not self.ws:
@@ -329,10 +323,9 @@ class ChromeTab(object):
 
 
 class ChromeTabThread(ChromeTab, threading.Thread):
-
     def __init__(self, host=None, port=None, connection=None, ws_timeout=0.2):
-        super(ChromeTabThread, self).__init__(
-            host, port, connection, ws_timeout)
+        super(ChromeTabThread, self).__init__(host, port, connection,
+                                              ws_timeout)
         super(ChromeTab, self).__init__()
 
     def run(self):
@@ -349,7 +342,7 @@ def main():
     time.sleep(2)
     w1.kill()
     time.sleep(1)
-    print w1.isAlive()
+    print(w1.isAlive())
 
 
 if __name__ == '__main__':
