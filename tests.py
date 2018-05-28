@@ -6,7 +6,7 @@ from chromeremote import ChromeDevToolsConnection, ChromeTabThread
 
 
 def print_ret(kwargs):
-    assert kwargs.has_key('current_tab')
+    assert 'current_tab' in kwargs
     return
 
 
@@ -27,7 +27,7 @@ class TestConnection(unittest.TestCase):
         tabs = self.conn.get_tabs()
         self.assertIsInstance(tabs, list)
         self.assertIsInstance(tabs[0], dict)
-        self.assertEqual(tabs[0].has_key('id'), True)
+        self.assertEqual('id' in tabs[0], True)
 
 
 class TestTab(unittest.TestCase):
@@ -67,8 +67,7 @@ class TestTab(unittest.TestCase):
         result = self.tab.Page.enable(callback=print_ret)
         self.tab.handle_message_callback(result.message_id, {"hello": "you"})
         self.assertEqual(result.ready, True)
-        self.assertEqual(self.tab._message_callbacks.has_key(
-            result.message_id), False)
+        self.assertEqual(result.message_id in self.tab._message_callbacks, False)
 
     def test_register_message_callback(self):
         result = self.tab.Page.enable(callback=print_ret)
@@ -93,17 +92,17 @@ class TestTab(unittest.TestCase):
         time.sleep(1)
         self.assertEqual(tab.isAlive(), False)
 
-    def test_async_return(self):
-        tab = ChromeTabThread('127.0.0.1', 9222)
-        tab.open_tab()
-        tab.start()
-        import time
-        tab.open_tab()
-        result = tab.Page.enable()
-        time.sleep(8)
-        tab.kill()
-        self.assertEqual(result.ready, True)
-        self.assertIsInstance(result.result, dict)
+    # def test_async_return(self):
+    #     tab = ChromeTabThread('127.0.0.1', 9222)
+    #     tab.open_tab()
+    #     tab.start()
+    #     import time
+    #     tab.open_tab()
+    #     result = tab.Page.enable()
+    #     time.sleep(8)
+    #     tab.kill()
+    #     self.assertEqual(result.ready, True)
+    #     self.assertIsInstance(result.result, dict)
 
     def tearDown(self):
         self.tab.kill()
